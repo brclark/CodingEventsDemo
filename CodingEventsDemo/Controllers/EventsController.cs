@@ -5,6 +5,8 @@ using System.Threading.Tasks;
 using CodingEventsDemo.Data;
 using CodingEventsDemo.Models;
 using CodingEventsDemo.ViewModels;
+using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 
@@ -12,21 +14,30 @@ using Microsoft.EntityFrameworkCore;
 
 namespace coding_events_practice.Controllers
 {
+    [Authorize]
     public class EventsController : Controller
     {
 
         private EventDbContext context;
+        private IAuthorizationService authorizationService;
+        private UserManager<IdentityUser> userManager;
 
-        public EventsController(EventDbContext dbContext)
+        public EventsController(EventDbContext dbContext, IAuthorizationService authorizationService,
+            UserManager<IdentityUser> userManager) : base()
         {
             context = dbContext;
+            this.authorizationService = authorizationService;
+            this.userManager = userManager;
         }
 
         // GET: /<controller>/
         public IActionResult Index()
         {
+            var currentUserId = userManager.GetUserId(User);
+
             List<Event> events = context.Events
                 .Include(e => e.Category)
+                .Where(e => e.UserId == currentUserId)
                 .ToList();
 
             return View(events);
@@ -45,13 +56,16 @@ namespace coding_events_practice.Controllers
         {
             if (ModelState.IsValid)
             {
+                var currentUserId = userManager.GetUserId(User);
+
                 EventCategory theCategory = context.Categories.Find(addEventViewModel.CategoryId);
                 Event newEvent = new Event
                 {
                     Name = addEventViewModel.Name,
                     Description = addEventViewModel.Description,
                     ContactEmail = addEventViewModel.ContactEmail,
-                    Category = theCategory
+                    Category = theCategory,
+                    UserId = currentUserId
                 };
 
                 context.Events.Add(newEvent);

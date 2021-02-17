@@ -17,6 +17,8 @@ namespace CodingEventsDemo.Models
 
         public int Id { get; set; }
 
+        public string UserId { get; set; }
+
         public Event(string name, string description, string contactEmail)
         {
             Name = name;
